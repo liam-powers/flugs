@@ -2,10 +2,7 @@ import { Client, Collection, GatewayIntentBits } from "discord.js";
 import * as path from "path";
 import * as fs from "fs";
 import { createRequire } from "module";
-import { config } from "dotenv";
-
-// Load environment variables from .env file
-config();
+import "dotenv/config";
 
 // Extend the Client type to include custom properties
 declare module "discord.js" {
