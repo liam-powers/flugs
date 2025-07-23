@@ -1,0 +1,25 @@
+{
+  "extends": "@flugs/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ],
+  "references": [
+    {
+      "path": "../../packages/types"
+    },
+    {
+      "path": "../../packages/database"
+    },
+    {
+      "path": "../../packages/utils"
+    }
+  ]
+}
