@@ -1,8 +1,8 @@
 import { REST } from "@discordjs/rest";
-import { Routes } from "discord-api-types/v10";
-import { ofetch } from "ofetch";
+import { Routes } from "discord.js";
 import * as fs from "fs";
 import * as path from "path";
+import { createRequire } from "module";
 
 async function deployCommands() {
   const clientid = process.env.DISCORD_CLIENT_ID;
@@ -11,7 +11,11 @@ async function deployCommands() {
     throw new Error("Couldn't find .env variables for deploy-commands.ts!");
   }
 
-  const __dirname = path.dirname(denoPath.fromFileUrl(import.meta.url));
+  // Get __dirname equivalent for ES modules
+  const require = createRequire(import.meta.url);
+  const __dirname = path.dirname(
+    path.dirname(require.resolve("./deployCommands.ts")),
+  );
 
   const commands = [];
   // Grab all the command folders from the commands directory you created earlier
@@ -48,30 +52,13 @@ async function deployCommands() {
         `Started refreshing ${commands.length} application (/) commands.`,
       );
 
-      await rest.put(Routes.applicationCommands(clientid), { body: [] }); // Clear all global commands
-      let data;
-      try {
-        const DISCORD_CLIENT_ID = Deno.env.get("DISCORD_CLIENT_ID");
-        data = await ofetch(
-          `https://discord.com/api/v10/applications/${DISCORD_CLIENT_ID}/commands`,
-          {
-            // @ts-ignore doesn't like PUT for some reason, but this is defined in ofetch api
-            method: "PUT",
-            headers: {
-              Authorization: `Bot ${token}`,
-              "Content-Type": "application/json; charset=UTF-8",
-              "User-Agent": `DiscordBot (discord.js, 14.16.3 (modified))`,
-            },
-            body: JSON.stringify(commands),
-          },
-        );
-      } catch (err) {
-        console.error("error adding commands:", err);
-        return;
-      }
+      // The put method fully refreshes all commands in the guild with the current set
+      const data = await rest.put(
+        Routes.applicationCommands(clientid),
+        { body: commands },
+      ) as any[];
 
       console.log(
-        // @ts-ignore discord doesn't provie typing for this
         `Successfully reloaded ${data.length} application (/) commands.`,
       );
     } catch (error) {
@@ -80,4 +67,8 @@ async function deployCommands() {
   })();
 }
 
-deployCommands();
+// Execute deployCommands function with proper error handling
+deployCommands().catch((error) => {
+  console.error("Failed to deploy commands:", error);
+  process.exit(1);
+});

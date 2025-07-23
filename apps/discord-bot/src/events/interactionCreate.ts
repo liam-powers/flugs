@@ -11,7 +11,9 @@ export const name = Events.InteractionCreate;
 export async function execute(interaction: ChatInputCommandInteraction) {
   if (!interaction.isChatInputCommand()) return;
 
-  const command = interaction.client.commands.get(interaction.commandName) as Command;
+  const command = interaction.client.commands.get(
+    interaction.commandName,
+  ) as Command;
 
   if (!command) {
     console.error(`No command matching ${interaction.commandName} was found.`);
@@ -25,16 +27,22 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   const now = Date.now();
-  const timestamps = cooldowns.get(command.data.name) as Collection<string, number>;
+  const timestamps = cooldowns.get(command.data.name) as Collection<
+    string,
+    number
+  >;
   if (!timestamps) {
-    console.error(`No timestamps collection found for command ${command.data.name}`);
+    console.error(
+      `No timestamps collection found for command ${command.data.name}`,
+    );
     return;
   }
   const defaultCooldownDuration = 3;
   const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1000;
 
   if (timestamps.has(interaction.user.id)) {
-    const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
+    const expirationTime = timestamps.get(interaction.user.id)! +
+      cooldownAmount;
 
     if (now < expirationTime) {
       const remainingTime = Math.ceil((expirationTime - now) / 1000);
@@ -42,20 +50,22 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       const seconds = remainingTime % 60;
       const message = await interaction.reply({
         content:
-          `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again in ${minutes} minute${minutes !== 1 ? 's' : ''} and ${seconds} second${seconds !== 1 ? 's' : ''}.`,
+          `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again in ${minutes} minute${
+            minutes !== 1 ? "s" : ""
+          } and ${seconds} second${seconds !== 1 ? "s" : ""}.`,
         ephemeral: true,
       });
-      
+
       // Delete the message after the cooldown expires
       setTimeout(async () => {
         try {
           await message.delete();
         } catch (error) {
           // Ignore errors if message is already deleted or not found
-          console.error('Error deleting cooldown message:', error);
+          console.error("Error deleting cooldown message:", error);
         }
       }, expirationTime - now);
-      
+
       return;
     }
   }

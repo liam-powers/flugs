@@ -1,6 +1,23 @@
 import { Client, Collection, GatewayIntentBits } from "discord.js";
 import * as path from "path";
 import * as fs from "fs";
+import { createRequire } from "module";
+import { config } from "dotenv";
+
+// Load environment variables from .env file
+config();
+
+// Extend the Client type to include custom properties
+declare module "discord.js" {
+  interface Client {
+    commands: Collection<string, any>;
+    cooldowns: Collection<string, any>;
+  }
+}
+
+// Get __dirname equivalent for ES modules
+const require = createRequire(import.meta.url);
+const __dirname = path.dirname(require.resolve("./index.ts"));
 
 async function main() {
   const token = process.env.DISCORD_TOKEN;
@@ -9,7 +26,6 @@ async function main() {
     throw new Error("main.ts for bot: Couldn't find DISCORD_TOKEN!");
   }
 
-  const __dirname = path.dirname(denoPath.fromFileUrl(import.meta.url));
   const client = new Client({ intents: [GatewayIntentBits.Guilds] });
   client.cooldowns = new Collection();
   client.commands = new Collection();
@@ -55,4 +71,8 @@ async function main() {
   console.log("Client logged in!");
 }
 
-main();
+// Execute main function with proper error handling
+main().catch((error) => {
+  console.error("Failed to start the bot:", error);
+  process.exit(1);
+});
