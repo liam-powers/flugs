@@ -3,9 +3,11 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
 import * as dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" });
+export const flugsConvexAPI = api;
 
-const client = new ConvexHttpClient(process.env["CONVEX_URL"]!);
+// dotenv.config({ path: ".env.local" });
+
+// const client = new ConvexHttpClient(process.env["CONVEX_URL"]!);
 
 // console.log("querying something...");
 // client.query(api.queries.getAllUsers).then(console.log);

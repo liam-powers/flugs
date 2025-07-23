@@ -1,16 +1,58 @@
-import { User } from "@flugs/types";
-import { databaseExample } from "@flugs/database";
-import { utilsExample } from "@flugs/utils";
+import { Client, Collection, GatewayIntentBits } from "discord.js";
+import * as path from "path";
+import * as fs from "fs";
 
-function main() {
-  console.log("Discord bot starting...");
+async function main() {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token) {
+    console.log({ token });
+    throw new Error("main.ts for bot: Couldn't find DISCORD_TOKEN!");
+  }
 
-  const databaseExampleUser: User = databaseExample();
-  const utilsExampleUser: User = utilsExample();
+  const __dirname = path.dirname(denoPath.fromFileUrl(import.meta.url));
+  const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+  client.cooldowns = new Collection();
+  client.commands = new Collection();
 
-  console.log("databaseExampleUser:", databaseExampleUser);
-  console.log("utilsExampleUser:", utilsExampleUser);
-  console.log("All packages working correctly!");
+  const foldersPath = path.join(__dirname, "commands");
+  const commandFolders = fs.readdirSync(foldersPath);
+
+  for (const folder of commandFolders) {
+    const commandsPath = path.join(foldersPath, folder);
+    const commandFiles = fs.readdirSync(commandsPath).filter((file) =>
+      file.endsWith(".ts")
+    );
+    for (const file of commandFiles) {
+      const filePath = path.join(commandsPath, file);
+      const command = await import(filePath);
+      if ("data" in command && "execute" in command) {
+        client.commands.set(command.data.name, command);
+      } else {
+        console.log(
+          `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
+        );
+      }
+    }
+  }
+
+  const eventsPath = path.join(__dirname, "events");
+  const eventFiles = fs.readdirSync(eventsPath).filter((file) =>
+    file.endsWith(".ts")
+  );
+
+  for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = await import(filePath);
+
+    if (event.once) {
+      client.once(event.name, (...args) => event.execute(...args));
+    } else {
+      client.on(event.name, (...args) => event.execute(...args));
+    }
+  }
+
+  client.login(token);
+  console.log("Client logged in!");
 }
 
 main();
